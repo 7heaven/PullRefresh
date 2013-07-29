@@ -2,13 +2,11 @@ package com.cfm.pullrefresh.widget;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.EmbossMaskFilter;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.util.AttributeSet;

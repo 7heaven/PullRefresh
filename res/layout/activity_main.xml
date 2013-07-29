@@ -4,9 +4,17 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity" >
 
-    <com.cfm.pullrefresh.widget.PullWidget
-        android:id="@+id/pull_widget"
+    <com.cfm.pullrefresh.widget.PullRefreshWidget
+        android:id="@+id/pull_refresh"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+    
+        <View
+            android:id="@+id/view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    
+    </com.cfm.pullrefresh.widget.PullRefreshWidget>
 
 </RelativeLayout>

@@ -2,6 +2,7 @@ package com.cfm.pullrefresh.widget;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -25,6 +26,8 @@ public class PullRefreshWidget extends LinearLayout {
 	private float dx,dy;
 	private int moveDistance;
 	private int headOriginalHeight;
+	
+	private boolean isInRefresh;
 
 	public PullRefreshWidget(Context context){
 		super(context);
@@ -47,6 +50,8 @@ public class PullRefreshWidget extends LinearLayout {
 		LayoutParams params = new LayoutParams(LayoutParams.MATCH_PARENT, headOriginalHeight);
 		params.topMargin = -headOriginalHeight;
 		addView(mHeadView, params);
+		
+		isInRefresh = false;
 	}
 	
 	@Override
@@ -58,7 +63,7 @@ public class PullRefreshWidget extends LinearLayout {
 	
 	private void initContent(){
 		int count = getChildCount();
-		if(count != 2) throw new ArrayIndexOutOfBoundsException("this widget must and at most contain one child view");
+		if(count != 2) throw new ArrayIndexOutOfBoundsException("this widget contain one child view at most and must contain one.");
 		
 		View view = getChildAt(1);
 		if(view instanceof AdapterView<?>){
@@ -87,44 +92,56 @@ public class PullRefreshWidget extends LinearLayout {
 		child.measure(childWidthSpec, childHeightSpec);
 	}
 	
+	private void setChildHeight(View child, int height){
+		ViewGroup.LayoutParams params = child.getLayoutParams();
+		params.height = height;
+		child.setLayoutParams(params);
+	}
+	
 	private void setHeadMargin(int height){
 		LayoutParams params = (LayoutParams) mHeadView.getLayoutParams();
-		params.topMargin = height;
+		params.topMargin = height - headOriginalHeight;
 		
 		mHeadView.setLayoutParams(params);
 	}
 	
 	private boolean shouldRefreshStart(int dy){
-		if(dy < 0) return false;
-		if(null != mNormalView) return true;
+		if(dy < 0) isInRefresh = false;;
+		if(null != mNormalView) isInRefresh = true;
 		if(null != mScrollView){
-			if(mScrollView.getChildAt(0).getScrollY() == 0) return true;
+			if(mScrollView.getChildAt(0).getScrollY() == 0) isInRefresh = true;
 		}
 		if(null != mAdapterView){
 			int top = mAdapterView.getChildAt(0).getTop();
 			int padding = mAdapterView.getPaddingTop();
 			if(mAdapterView.getFirstVisiblePosition() == 0){
 				if(top == 0 || Math.abs(top - padding) <= 8){
-					return true;
+					isInRefresh = true;
 				}
 			}
 		}
 		
-		return false;
+		return isInRefresh;
 	}
 	
-	@Override
+	/*
+	 @Override
 	public boolean onInterceptTouchEvent(MotionEvent event){
+		dx = event.getRawX();
+		dy = event.getRawY();
+		Log.d(TAG, "INTERCEPT:" + event.toString());
 		switch(event.getAction() & MotionEvent.ACTION_MASK){
 		case MotionEvent.ACTION_DOWN:
-			dx = event.getX();
-			dy = event.getY();
+			moveDistance = (int) dy;
+			Log.d(TAG, "down");
 			break;
 		case MotionEvent.ACTION_MOVE:
-			dx = event.getX() - dx;
-			dy = event.getY() - dy;
+			moveDistance = (int) (dy - moveDistance);
+			Log.d(TAG, "move");
 			if(Math.abs(dx) < Math.abs(dy)){
+				Log.d(TAG, "dx < dy");
 				if(shouldRefreshStart((int) dy)){
+					Log.d(TAG, "intercepted");
 					return true;
 				}
 			}
@@ -134,28 +151,40 @@ public class PullRefreshWidget extends LinearLayout {
 			break;
 		}
 		
-		return false;
+		Log.d(TAG, "not intercepted");
+		
+		return super.onInterceptTouchEvent(event);
 	}
+	 */
 	
 	@Override
 	public boolean onTouchEvent(MotionEvent event){
+		Log.d(TAG, "TOUCH:" + event.toString());
 		switch(event.getAction() & MotionEvent.ACTION_MASK){
 		case MotionEvent.ACTION_DOWN:
 			dx = event.getX();
 			dy = event.getY();
 			break;
 		case MotionEvent.ACTION_MOVE:
-			dy = event.getY() - dy;
-			if(dy <= headOriginalHeight){
-				setHeadMargin((int) dy);
-			}else{
-				mPullWidget.setHeight((int) dy);
+			int y = (int) (event.getY() - dy);
+			Log.d(TAG, "DY:" + y);
+			if(shouldRefreshStart((int) y)){
+				if(y <= headOriginalHeight && y >= 0){
+					setHeadMargin((int) y);
+				}else if(y > headOriginalHeight){
+						Log.d(TAG, " y > height");
+						mPullWidget.setHeight((int) y - headOriginalHeight);
+						Log.d(TAG, "dddd:" + (y - headOriginalHeight));
+						setChildHeight(mHeadView, (int) y);
+				
+				}
 			}
 			break;
 		case MotionEvent.ACTION_CANCEL:
 		case MotionEvent.ACTION_UP:
+			mPullWidget.smoothToOriginalSpot();
 			break;
 		}
-		return super.onTouchEvent(event);
+		return true;
 	}
 }
