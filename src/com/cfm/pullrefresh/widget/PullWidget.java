@@ -37,12 +37,24 @@ public class PullWidget extends View{
 	private float minimumBottomHeight;
 	
 	private Handler handler;
-	private MyRunnable runnable;
+	private PullRunnable pullRunnable;
+	private CirclingRunnable circlingRunnable;
+	private BackRunnable backRunnable;
 	
-	private class MyRunnable implements Runnable{
+	private OnStateChangeListener onStateChangeListener;
+	
+	private boolean isInRotateMode;
+	private float degree;
+	
+	public interface OnStateChangeListener{
+		public void onCirclingFullyStop();
+		public void onPullFullyStop();
+	}
+	
+	private class PullRunnable implements Runnable{
 		private int movingHeight;
 		
-		public MyRunnable(int movingHeight){
+		public PullRunnable(int movingHeight){
 			this.movingHeight = movingHeight;
 		}
 		
@@ -52,8 +64,57 @@ public class PullWidget extends View{
 			setHeight(movingHeight);
 			
 			if(movingHeight > 0){
-				handler.postDelayed(runnable, 20);
+				handler.postDelayed(pullRunnable, 20);
+			}else{
+				if(null != onStateChangeListener) onStateChangeListener.onPullFullyStop();
 			}
+		}
+	}
+	
+	private class CirclingRunnable implements Runnable{
+		
+		public CirclingRunnable(){
+			isInRotateMode = true;
+			handler.removeCallbacks(pullRunnable);
+			handler.removeCallbacks(backRunnable);
+			setHeight(0);
+		}
+		
+		@Override
+		public void run(){
+			if(degree < 360){
+				degree += 20;
+			}else{
+				degree = 0;
+			}
+			
+			invalidate();
+			
+			handler.postDelayed(circlingRunnable, 20);
+		}
+	}
+	
+	private class BackRunnable implements Runnable{
+		
+		public BackRunnable(){
+			isInRotateMode = true;
+			handler.removeCallbacks(pullRunnable);
+			handler.removeCallbacks(circlingRunnable);
+			setHeight(0);
+		}
+		
+		@Override
+		public void run(){
+			degree += (359 - degree) * 0.5F;
+			if(degree < 359){
+				handler.postDelayed(backRunnable, 20);
+			}else{
+				degree = 0;
+				isInRotateMode = false;
+				if(null != onStateChangeListener) onStateChangeListener.onCirclingFullyStop();
+			}
+			
+			invalidate();
 		}
 	}
 
@@ -84,6 +145,9 @@ public class PullWidget extends View{
 		minimumContentHeight = context.getResources().getDimensionPixelOffset(R.dimen.minimum_content_height);
 		minimumBottomHeight = minimumContentHeight;
 		
+		isInRotateMode = false;
+		degree = 0;
+		handler = new Handler();
 	}
 	
 	public void setHeight(int height){
@@ -100,8 +164,6 @@ public class PullWidget extends View{
 		param.height = height;
 		setLayoutParams(param);
 		invalidate();
-		
-		Log.d(TAG, "setHeight:" + height);
 	}
 	
 	public boolean isExceedMaximumHeight(){
@@ -109,26 +171,45 @@ public class PullWidget extends View{
 	}
 	
 	public void smoothToOriginalSpot(){
-		handler = new Handler();
-		runnable = new MyRunnable(height);
-		handler.post(runnable);
+		pullRunnable = new PullRunnable(height);
+		handler.post(pullRunnable);
+	}
+	
+	public void circling(){
+		circlingRunnable = new CirclingRunnable();
+		handler.post(circlingRunnable);
+		Log.d(TAG, "circling");
+	}
+	
+	public void stopCirclingAndReturn(){
+		backRunnable = new BackRunnable();
+		handler.post(backRunnable);
+	}
+	
+	public void setOnStateChangeListener(OnStateChangeListener onStateChangeListener){
+		this.onStateChangeListener = onStateChangeListener;
+	}
+	
+	public OnStateChangeListener getOnStateChangeListener(){
+		return onStateChangeListener;
 	}
 	
 	@Override
 	public void onMeasure(int widthMeasureSpec, int heightMeasureSpec){
 		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 		
-		Log.d(TAG, height + ":" + minimumHeight);
-		
 		if(heightMeasureSpec < minimumHeight){
 			height = (int) minimumHeight;
 			setMeasuredDimension(width, height);
 		}
 		
+		if(widthMeasureSpec < minimumHeight){
+			width = (int) minimumHeight;
+			setMeasuredDimension(width, height);
+		}
+		
 		width = getMeasuredWidth();
 		height = getMeasuredHeight();
-		
-		Log.d(TAG, height + ":" + minimumHeight);
 		
 		measureDraw(width, height);
 	}
@@ -164,6 +245,13 @@ public class PullWidget extends View{
 		
 		topBound.round(iconBound);
 		iconDrawable.setBounds(iconBound);
-		iconDrawable.draw(canvas);
+		if(isInRotateMode){
+			canvas.save();
+			canvas.rotate(degree, iconDrawable.getBounds().centerX(), iconDrawable.getBounds().centerY());
+			iconDrawable.draw(canvas);
+			canvas.restore();
+		}else{
+			iconDrawable.draw(canvas);
+		}
 	}
 }
