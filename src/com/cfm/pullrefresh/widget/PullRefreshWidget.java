@@ -185,6 +185,7 @@ public class PullRefreshWidget extends LinearLayout implements OnStateChangeList
 			int padding = mAdapterView.getPaddingTop();
 			if(mAdapterView.getFirstVisiblePosition() == 0){
 				if(top == 0 || Math.abs(top - padding) <= 8){
+					Log.d(TAG, "top-padding:" + Math.abs(top - padding));
 					return true;
 				}
 			}
@@ -234,6 +235,7 @@ public class PullRefreshWidget extends LinearLayout implements OnStateChangeList
 			moveDistance = (int) (event.getRawY() - moveDistance);
 			if(Math.abs(event.getRawX() - dx) < Math.abs(moveDistance)){
 				if(shouldRefreshStart() && moveDistance > 0){
+					Log.d(TAG, "shouldRefreshStart");
 					return true;
 				}
 			}
@@ -271,6 +273,8 @@ public class PullRefreshWidget extends LinearLayout implements OnStateChangeList
 				Log.d(TAG, "DRAGGING");
 				if(moveDistance <= headOriginalHeight){
 					setHeadMargin((int) moveDistance);
+					mPullWidget.setHeight(0);
+					setChildHeight(mHeadView, headOriginalHeight);
 				}else{
 					setHeadMargin(headOriginalHeight);
 					mPullWidget.setHeight((int) moveDistance - headOriginalHeight);
@@ -291,7 +295,13 @@ public class PullRefreshWidget extends LinearLayout implements OnStateChangeList
 			break;
 		case MotionEvent.ACTION_CANCEL:
 		case MotionEvent.ACTION_UP:
-			if(mode == MODE_DRAGGING) smoothToOriginalSpot(moveDistance);
+			if(mode == MODE_DRAGGING) {
+				if(moveDistance > headOriginalHeight){
+					smoothToOriginalSpot(moveDistance);
+				}else{
+					smoothHideHeadView();
+				}
+			}
 			break;
 		}
 		return true;
