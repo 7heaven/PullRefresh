@@ -13,9 +13,9 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 
 import com.cfm.pullrefresh.R;
-import com.cfm.pullrefresh.widget.PullWidget.OnStateChangeListener;
+import com.cfm.pullrefresh.widget.PullWidget.OnStateChangedListener;
 
-public class PullRefreshWidget extends LinearLayout implements OnStateChangeListener{
+public class PullRefreshWidget extends LinearLayout implements OnStateChangedListener{
 	
 	private static final String TAG = "PullRefreshWidget";
 	
@@ -184,7 +184,7 @@ public class PullRefreshWidget extends LinearLayout implements OnStateChangeList
 			int top = mAdapterView.getChildAt(0).getTop();
 			int padding = mAdapterView.getPaddingTop();
 			if(mAdapterView.getFirstVisiblePosition() == 0){
-				if(top == 0 || Math.abs(top - padding) <= 8){
+				if(top == 0 || Math.abs(top - padding) <= 3){
 					Log.d(TAG, "top-padding:" + Math.abs(top - padding));
 					return true;
 				}

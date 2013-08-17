@@ -16,6 +16,12 @@ import android.view.ViewGroup.LayoutParams;
 
 import com.cfm.pullrefresh.R;
 
+/**
+ * @hide
+ * 
+ * @author caifangmao8@gmail.com
+ *
+ */
 public class PullWidget extends View{
 	
 	private static final String TAG = "PullWidget";
@@ -41,12 +47,12 @@ public class PullWidget extends View{
 	private CirclingRunnable circlingRunnable;
 	private BackRunnable backRunnable;
 	
-	private OnStateChangeListener onStateChangeListener;
+	private OnStateChangedListener onStateChangeListener;
 	
 	private boolean isInRotateMode;
 	private float degree;
 	
-	public interface OnStateChangeListener{
+	public interface OnStateChangedListener{
 		public void onCirclingFullyStop();
 		public void onPullFullyStop();
 	}
@@ -150,6 +156,10 @@ public class PullWidget extends View{
 		handler = new Handler();
 	}
 	
+	public void setMinimumHeight(int minimumHeight){
+		this.minimumHeight = minimumHeight;
+	}
+	
 	public void setHeight(int height){
 		height += minimumHeight;
 		if(height > maximumHeight){
@@ -186,12 +196,16 @@ public class PullWidget extends View{
 		handler.post(backRunnable);
 	}
 	
-	public void setOnStateChangeListener(OnStateChangeListener onStateChangeListener){
+	public void setOnStateChangeListener(OnStateChangedListener onStateChangeListener){
 		this.onStateChangeListener = onStateChangeListener;
 	}
 	
-	public OnStateChangeListener getOnStateChangeListener(){
+	public OnStateChangedListener getOnStateChangeListener(){
 		return onStateChangeListener;
+	}
+	
+	public void setColor(int color){
+		paint.setColor(color);
 	}
 	
 	@Override
@@ -235,6 +249,7 @@ public class PullWidget extends View{
 	public void onDraw(Canvas canvas){
 		super.onDraw(canvas);
 		
+		//two semi-circles and two bezier curves combined
 		path.reset();
 		path.moveTo(topBound.left, minimumHeight / 2);
 		path.arcTo(topBound, 180, 180);
@@ -243,6 +258,7 @@ public class PullWidget extends View{
 		path.quadTo(bottomBound.left, centerPoint.y, topBound.left, minimumHeight / 2);
 		canvas.drawPath(path, paint);
 		
+		//circle arrow
 		topBound.round(iconBound);
 		iconDrawable.setBounds(iconBound);
 		if(isInRotateMode){
